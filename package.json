@@ -1,0 +1,16 @@
+{
+  "name": "ems-backend",
+  "version": "1.0.0",
+  "description": "Eye Management System (Backend)",
+  "main": "src/index.ts",
+  "repository": "https://github.com/LITdevs/ems-backend.git",
+  "author": "LIT Devs",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@types/node": "^18.11.7",
+    "typescript": "^4.8.4"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1"
+  }
+}
