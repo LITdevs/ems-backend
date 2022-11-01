@@ -80,7 +80,7 @@ async function Auth(req, res, next) {
         res.locals.user = payload;
         return next()
     } catch (e : any) {
-        // If 
+        // If
         if (["ERR_JWT_CLAIM_VALIDATION_FAILED", "ERR_JWS_INVALID", "ERR_JWS_SIGNATURE_VERIFICATION_FAILED", "ERR_JWT_EXPIRED"].includes(e.code)) {
             return res.status(401).json(new UnauthorizedReply(e.code));
         } else {
