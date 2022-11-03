@@ -8,13 +8,18 @@ app.use(express.json());
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "*");
+    res.header("Access-Control-Allow-Methods", "*");
     next();
 })
 
 import auth from './routes/auth';
 import minecraft from './routes/minecraft';
+import sharkofbot from './routes/sharkofbot';
+import pm2 from './routes/pm2';
 app.use("/v1/auth", auth);
 app.use("/v1/minecraft", minecraft)
+app.use("/v1/sharkofbot", sharkofbot)
+app.use("/v1/pm2", pm2);
 
 app.get("*", (req : Request, res : Response) => {
     res.status(403).end();
