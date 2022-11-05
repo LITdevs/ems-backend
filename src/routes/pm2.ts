@@ -10,6 +10,7 @@ import Deployment from "../classes/Deployment";
 import NotFoundReply from "../classes/reply/NotFoundReply";
 import {RouterLike} from "express-ws";
 import {getEws} from "../index";
+import { request } from 'http';
 
 /**
  * Find and read all app definitions in /litdevs/ems-internal/app-definitions
@@ -130,8 +131,48 @@ router.ws("/socket", (ws, req) => {
     WsAuth(req.headers["sec-websocket-protocol"]).then(allow => {
         if (!allow) return ws.close(3000, "Unauthorized");
         ws.on('message', msg => {
+            if (msg === "ping") return ws.send("pong");
             ws.send("This websocket is read-only.")
         })
+    })
+})
+
+router.post("/socket/broadcast", Auth, (req: Request, res: Response) => {
+    if (!req.body.message) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    broadcastDeploy(req.body.message);
+    res.json(new Reply(200, true, { message: "Message sent" }));
+})
+
+router.post("/status", Auth, (req: Request, res: Response) => {
+    if (!req.body.appName) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    exec("pm2 jlist", (error, stdout) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json(new ServerErrorReply());
+        }
+        try {
+            let json = JSON.parse(stdout);
+            let app = json.find((item: any) => item.name === req.body.appName);
+            if (!app) return res.status(404).json(new NotFoundReply("No such process"));
+            return res.json(new Reply(200, true, { message: "Here is the information about the process", data: app }));
+        } catch {
+            return res.status(500).json(new ServerErrorReply());
+        }
+    })
+})
+
+router.patch("/status", Auth, (req: Request, res: Response) => {
+    if (!req.body.appName || !req.body.status) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    if (!processes.some(process => process.name === req.body.appName)) return res.status(404).json(new NotFoundReply("No such process"));
+    let command
+    if (req.body.status) command = `pm2 start ${req.body.appName}`;
+    else command = `pm2 stop ${req.body.appName}`;
+    exec(command, (error) => {
+        if (error) {
+            console.error(error);
+            return res.status(500).json(new ServerErrorReply());
+        }
+        return res.json(new Reply(200, true, { message: "Status changed" }));
     })
 })
 
