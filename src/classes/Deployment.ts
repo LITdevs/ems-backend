@@ -1,6 +1,7 @@
 import {Application} from "./Application";
 import fs from "fs";
 import { exec } from "child_process";
+import {broadcastDeploy, getProcesses} from "../routes/pm2";
 
 export default class Deployment {
     app : Application;
@@ -17,6 +18,7 @@ export default class Deployment {
         return new Promise<void>((resolve, reject) => {
             let newPath = `/litdevs/projects/${this.app.name}`
             if (this.type === "git") {
+                broadcastDeploy({ name: this.app.name, message: "Cloning repository from git", event: "deploy_file_get_update" })
                 // Clone repo from git, update path to known location
                 exec(`git clone ${this.path} ${newPath}`, (err : any) => {
                     if (err) {
@@ -29,6 +31,7 @@ export default class Deployment {
                     resolve()
                 });
             } else if (this.type === "local") {
+                broadcastDeploy({ name: this.app.name, message: "Moving files to project folder", event: "deploy_file_get_update" })
                 // Move local files to new folder with known name, ensure the specified folder actually does exist
                 let expectedPath = `/litdevs/projects/${this.path}`
 
@@ -63,12 +66,73 @@ export default class Deployment {
             let i = 0;
             this.app.env.forEach(envEntry => {
                 i++;
+                broadcastDeploy({ name: this.app.name, message: `Adding entry for ${envEntry.key}`, event: "deploy_env_file_update" })
                 envContent += `${envEntry.key}=${envEntry.value}\n`;
                 if (i === this.app.env.length) {
                     fs.writeFileSync(`${this.path}/.env`, envContent)
                     resolve();
                 }
             })
+        })
+    }
+
+    installDependencies() {
+        return new Promise<void>((resolve, reject) => {
+            // Install node dependencies
+            let installCommand = `${this.app.pacman} install`;
+            exec(installCommand, { cwd: this.path }, (err : any) => {
+                if (err) {
+                    console.error(err);
+                    return reject(err);
+                }
+                resolve();
+            })
+        })
+    }
+
+    checkExisting() {
+        // Check for existing deployment
+        // PM2, Working directory, definition
+        return new Promise<void>((resolve, reject) => {
+            // Check ems definitions
+            let activeDeployments = getProcesses();
+            const foundDeployment = activeDeployments.some(deployment => deployment.name === this.app.name);
+            if (foundDeployment) return reject("ERR_USER_FAULT:An existing deployment in EMS found.");
+
+            // Check for existing working directory, only do this for git though
+            if (this.type === "git") {
+                let possiblePath = `/litdevs/projects/${this.app.name}`
+                if (fs.existsSync(possiblePath)) return reject("ERR_USER_FAULT:An existing deployment folder found.");
+            }
+
+            // Check PM2 for running instance
+            exec("pm2 jlist", (error, stdout) => {
+                if (error) return reject(error); // error is logged in router
+                let pm2List = JSON.parse(stdout);
+                const foundDeployment = pm2List.some(deployment => deployment.name === this.app.name);
+                if (foundDeployment) return reject("ERR_USER_FAULT:An existing deployment in PM2 found.")
+                resolve();
+            })
+        })
+    }
+
+    pm2() {
+        return new Promise<void>((resolve, reject) => {
+            let deploymentCommand = `pm2 start "${this.app.runCommand}" --name ${this.app.name}`;
+            exec(deploymentCommand, { cwd: this.path }, (error, stdout) => {
+                if (error) return reject(error);
+                exec("pm2 save", (error) => {
+                    if (error) return reject(error);
+                    resolve();
+                })
+            })
+        })
+    }
+
+    writeDefinitionToFile() {
+        return new Promise<void>((resolve, reject) => {
+            fs.writeFileSync(`/litdevs/ems-internal/app-definitions/${this.app.name}.json`, JSON.stringify(this.app, null, 4));
+            resolve();
         })
     }
 }

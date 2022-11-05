@@ -66,8 +66,8 @@ router.post("/user", Auth, (req, res) => {
 })
 
 async function Auth(req, res, next) {
-    if (!req.headers.authorization) return res.status(401).json(new UnauthorizedReply())
-    const jwt = req.headers.authorization.split("Bearer ")[1]
+    if (!req.headers?.authorization) return res.status(401).json(new UnauthorizedReply())
+    let jwt = req.headers.authorization.split("Bearer ")[1];
 
     // Verify Jason Webb Telescope
     // jose.jwtVerify throws an error if the JWT is not valid so try {...} catch (e) it
@@ -90,5 +90,23 @@ async function Auth(req, res, next) {
     }
 }
 
+async function WsAuth(jwt) : Promise<boolean> {
+    try {
+         await jose.jwtVerify(jwt, secret, {
+            issuer: 'EMS-API',
+            audience: 'EMS',
+        })
+        return true;
+    } catch (e : any) {
+        // If
+        if (["ERR_JWT_CLAIM_VALIDATION_FAILED", "ERR_JWS_INVALID", "ERR_JWS_SIGNATURE_VERIFICATION_FAILED", "ERR_JWT_EXPIRED"].includes(e.code)) {
+            return false;
+        } else {
+            console.error(e)
+            return false;
+        }
+    }
+}
+
 export default router;
-export { Auth };
+export { Auth, WsAuth };

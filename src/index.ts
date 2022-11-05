@@ -1,8 +1,10 @@
 import express, {Request, Response} from 'express';
-import db from "./db";
-const app = express();
 import dotenv from 'dotenv';
 dotenv.config();
+import expressWs from 'express-ws';
+import db from "./db";
+const app = express();
+const ews = expressWs(app)
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -40,3 +42,11 @@ db.dbEvents.on("ready", () => {
         console.info(`App listening on ${port}`);
     })
 })
+
+/**
+ * Get the express-ws instance
+ * @returns ews - express-ws instance
+ */
+export function getEws() {
+    return ews;
+}
