@@ -166,7 +166,7 @@ router.post("/status", Auth, (req: Request, res: Response) => {
 })
 
 router.patch("/status", Auth, (req: Request, res: Response) => {
-    if (!req.body.appName || !req.body.status) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    if (!req.body.appName) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
     if (!processes.some(process => process.name === req.body.appName)) return res.status(404).json(new NotFoundReply("No such process"));
     let command
     if (req.body.status) command = `pm2 start ${req.body.appName}`;
