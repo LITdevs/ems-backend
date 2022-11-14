@@ -36,4 +36,11 @@ export default class SecretStore {
 
         return encoded;
     }
+
+    nuke(key : string) {
+        let nukeIndex = this.store.findIndex(secret => secret.key === key);
+        this.store.splice(nukeIndex, 1);
+        fs.writeFileSync("/litdevs/ems-internal/secret-store.json", JSON.stringify(this.store));
+        return true;
+    }
 }
