@@ -75,8 +75,12 @@ router.post("/deploy", Auth, async (req: Request, res: Response) => {
         await deployment.ensureGitRepo();
         broadcastDeploy({ name: appDef.name, message: "Project is a git repository", event: "deploy_git_check_end" })
         broadcastDeploy({ name: appDef.name, message: "Creating .env file", event: "deploy_env_file_start" })
-        await deployment.createEnv();
-        broadcastDeploy({ name: appDef.name, message: ".env file created", event: "deploy_env_file_end" })
+        if (deployment.app.env.length > 0) {
+            await deployment.createEnv();
+            broadcastDeploy({ name: appDef.name, message: ".env file created", event: "deploy_env_file_end" })
+        } else {
+            broadcastDeploy({ name: appDef.name, message: ".env skipped, no env specified", event: "deploy_env_file_end" })
+        }
         broadcastDeploy({ name: appDef.name, message: `Installing dependencies with ${appDef.pacman}`, event: "deploy_dependency_install_start" })
         await deployment.installDependencies();
         broadcastDeploy({ name: appDef.name, message: "Dependencies installed", event: "deploy_dependency_install_end" })
