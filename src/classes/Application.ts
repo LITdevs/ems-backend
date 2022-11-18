@@ -11,7 +11,7 @@ export interface IApplication {
     portEnv?: string; // Environment variable to change port (optional)
     defaultPort: number; // Default port
     env: IEnv[]; // Array of current environment variables
-    pacman: "npm" | "yarn"; // node package manager, npm or yarn
+    pacman: "npm" | "yarn" | "pip"; // node package manager, npm or yarn
     icon: string; // url or file path to icon
 }
 
@@ -21,7 +21,7 @@ export class Application implements IApplication {
     name: string;
     env: IEnv[];
     icon: string;
-    pacman: "npm" | "yarn";
+    pacman: "npm" | "yarn" | "pip";
     portEnv?: string;
     runCommand: string;
 
@@ -47,7 +47,7 @@ export class Application implements IApplication {
             if (key !== "portEnv" && key !== "name" && !inObjKeys.includes(key)) throw "Object is not an application definition";
         })
         // Pacman can only be npm or yarn, env is an object (See IEnv[])
-        if (this.pacman !== "npm" && this.pacman !== "yarn") throw "Package manager should be npm or yarn";
+        if (this.pacman !== "npm" && this.pacman !== "yarn" && this.pacman !== "pip") throw "Package manager should be npm, yarn or pip";
         if (typeof this.env !== "object") throw "Env should be an object";
     }
 }

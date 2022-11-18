@@ -33,7 +33,7 @@ export default class Deployment {
             } else if (this.type === "local") {
                 broadcastDeploy({ name: this.app.name, message: "Moving files to project folder", event: "deploy_file_get_update" })
                 // Move local files to new folder with known name, ensure the specified folder actually does exist
-                let expectedPath = `/litdevs/projects/${this.path}`
+                let expectedPath = this.path;
 
                 let folderPresent = fs.existsSync(expectedPath);
                 if (!folderPresent) throw "ERR_USER_FAULT:Project folder not found";
@@ -79,7 +79,10 @@ export default class Deployment {
     installDependencies() {
         return new Promise<void>((resolve, reject) => {
             // Install node dependencies
-            let installCommand = `${this.app.pacman} install`;
+            let installCommand
+            if (this.app.pacman !== "pip") installCommand = `${this.app.pacman} install`
+            else installCommand = `${this.app.pacman} install -r requirements.txt`
+
             exec(installCommand, { cwd: this.path }, (err : any) => {
                 if (err) {
                     console.error(err);
@@ -118,7 +121,7 @@ export default class Deployment {
 
     pm2() {
         return new Promise<void>((resolve, reject) => {
-            let deploymentCommand = `pm2 start "${this.app.runCommand}" --name ${this.app.name}`;
+            let deploymentCommand = `pm2 start "${this.app.runCommand}" ${this.app.pacman === "pip" ? '--interpreter python3 ' : ""}--name ${this.app.name}`;
             exec(deploymentCommand, { cwd: this.path }, (error, stdout) => {
                 if (error) return reject(error);
                 exec("pm2 save", (error) => {
