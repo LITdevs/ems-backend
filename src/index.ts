@@ -16,12 +16,10 @@ app.use((req, res, next) => {
 
 import auth from './routes/auth';
 import minecraft from './routes/minecraft';
-import sharkofbot from './routes/sharkofbot';
 import pm2 from './routes/pm2';
 import ass from './routes/ass';
 app.use("/v1/auth", auth);
 app.use("/v1/minecraft", minecraft)
-app.use("/v1/sharkofbot", sharkofbot)
 app.use("/v1/pm2", pm2);
 app.use("/v1/ass", ass);
 
