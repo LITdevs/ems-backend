@@ -49,4 +49,8 @@ router.patch("/status", Auth, (req: Request, res: Response) => {
     })
 })
 
+router.get("/icon", (req : Request, res: Response) => {
+    res.sendFile("/litdevs/ems-internal/atm7.png")
+})
+
 export default router;

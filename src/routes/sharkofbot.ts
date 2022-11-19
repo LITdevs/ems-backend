@@ -43,4 +43,8 @@ router.patch("/funserver/status", Auth, (req: Request, res: Response) => {
     })
 })
 
+router.get("/funserver/icon", (req : Request, res: Response) => {
+    res.sendFile("/litdevs/ems-internal/funserver.png")
+})
+
 export default router;

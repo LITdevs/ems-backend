@@ -25,6 +25,11 @@ app.use("/v1/sharkofbot", sharkofbot)
 app.use("/v1/pm2", pm2);
 app.use("/v1/ass", ass);
 
+app.get("/v1/ping", (req : Request, res : Response) => {
+    res.contentType("text/plain");
+    res.send("pong");
+})
+
 app.get("*", (req : Request, res : Response) => {
     res.status(403).end();
 })

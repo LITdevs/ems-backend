@@ -10,6 +10,7 @@ import Deployment from "../classes/Deployment";
 import NotFoundReply from "../classes/reply/NotFoundReply";
 import {getEws} from "../index";
 import { Tail } from "tail";
+import axios from "axios";
 
 /**
  * Find and read all app definitions in /litdevs/ems-internal/app-definitions
@@ -39,7 +40,7 @@ definitions.forEach(async definition => {
 })
 
 function dataCleaner(data) {
-    // noinspection RegExpRedundantEscape (Im scared to remove it)
+    // noinspection RegExpRedundantEscape (I'm too scared to remove it)
     let reg0 = /\[[0-9]m\[[0-9]\]\[[0-9]m/gm;
     let reg1 = /[a-zA-Z0-9\[\]]/gm;
     let reg2 = /[0-9]m/gm; // This one is the most brutal
@@ -287,9 +288,43 @@ router.get("/logs/:appName", Auth, (req: Request, res: Response) => {
     res.json(new Reply(200, true, {message: `Logs for ${appName}`, info: infoLogs, error: errorLogs}))
 })
 
+router.get("/icon/:appName", (req: Request, res: Response) => {
+    let appName = req.params.appName;
+    const notFound = () => {
+        return res.status(404).sendFile("/litdevs/ems-internal/404.png");
+    }
+    let process = processes.find(process => process.name === appName);
+    if (!process) return notFound();
+
+    if (process.icon.startsWith("http")) {
+        return res.redirect(process.icon);
+    } else {
+        if (fs.existsSync(process.icon)) return res.sendFile(process.icon);
+        return notFound();
+    }
+})
+
+router.post("/track/:appName", (req: Request, res: Response) => {
+    let appName = req.params.appName;
+    if (!processes.some(process => process.name === appName)) return res.status(404).json(new NotFoundReply("No such process"))
+    if (!req.body.url) return res.status(400).json(new InvalidReplyMessage("URL missing"))
+    axios.post(`https://uptime.litdevs.org/track?key=${process.env.UPTIME_KEY}&name=${appName}&url=${req.body.url}`).then(() => {
+        let process = processes.find(process => process.name === appName);
+        if (process) { // Will always be true, just here to make IDE silence :(
+            process.trackingName = appName;
+            fs.writeFileSync(`/litdevs/ems-internal/app-definitions/${appName}.json`, JSON.stringify(process, null, 4));
+        }
+        res.json(new Reply(200, true, {message: `Tracking requested for ${appName}`}))
+    }).catch((e) => {
+        console.error(e);
+        res.status(500).json(new ServerErrorReply());
+    })
+})
+
 export function broadcastDeploy(message : object) {
     let ews = getEws();
     // @ts-ignore | Took it from the docs, it works, but the type definition doesn't know it takes an optional argument.
+    // UPDATE: I don't think the argument does anything?? Cool documentation lol.
     let clients = ews.getWss('/v1/pm2/socket').clients
     clients.forEach(client => {
         client.send(JSON.stringify(message));
