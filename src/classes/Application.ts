@@ -35,6 +35,7 @@ export class Application implements IApplication {
         this.pacman = inObj.pacman;
         this.portEnv = inObj.portEnv ? String(inObj.portEnv) : undefined;
         this.runCommand = String(inObj.runCommand);
+        this.trackingName = inObj.trackingName ? String(inObj.trackingName) : undefined;
         // Generate name from displayName for use as an identifier.
         // Any non-alphanumeric character will be removed, spaces turned into dashes and lowercased.
         // "EMS Backend😻" -> "ems-backend"
