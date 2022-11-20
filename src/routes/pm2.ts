@@ -93,7 +93,7 @@ router.get("/processes", Auth, (req: Request, res: Response) => {
     // Strip out env from processes and respond with array of processes.
     let safeProcesses : Application[] = [];
     processes.forEach(process => {
-        safeProcesses.push({...process, env: []})
+        safeProcesses.push({...process, env: [], updateEnv: async () => { return; }})
     })
     res.json(new Reply(200, true, {message: "Here are the pm2 processes running in EMS", data: safeProcesses}));
 })
@@ -224,7 +224,7 @@ router.post("/status", Auth, (req: Request, res: Response) => {
             let json = JSON.parse(stdout);
             let app = json.find((item: any) => item.name === req.body.appName);
             if (!app) return res.status(404).json(new NotFoundReply("No such process"));
-            return res.json(new Reply(200, true, { message: "Here is the information about the process", data: app }));
+            return res.json(new Reply(200, true, { message: "Here is the information about the process", data: app, definition: processes.find(process => process.name === req.body.appName) }));
         } catch {
             return res.status(500).json(new ServerErrorReply());
         }
@@ -244,6 +244,18 @@ router.patch("/status", Auth, (req: Request, res: Response) => {
         }
         return res.json(new Reply(200, true, { message: "Status changed" }));
     })
+})
+
+router.put("/env", Auth, (req: Request, res: Response) => {
+    if (!req.body.appName || !req.body.env) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    let process = processes.find(process => process.name === req.body.appName);
+    if (!process) return res.status(404).json(new NotFoundReply("No such process"));
+    process.updateEnv(req.body.env).then(() => {
+        return res.json(new Reply(200, true, {message: ".env updated"}));
+    }).catch(e => {
+        console.error(e);
+        return res.json(new ServerErrorReply());
+    });
 })
 
 router.post("/restart", Auth, (req: Request, res: Response) => {
