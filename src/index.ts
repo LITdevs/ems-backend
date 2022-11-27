@@ -18,10 +18,12 @@ import auth from './routes/auth';
 import minecraft from './routes/minecraft';
 import pm2 from './routes/pm2';
 import ass from './routes/ass';
+import nginx from './routes/nginx';
 app.use("/v1/auth", auth);
 app.use("/v1/minecraft", minecraft)
 app.use("/v1/pm2", pm2);
 app.use("/v1/ass", ass);
+app.use("/v1/nginx", nginx);
 
 app.get("/v1/ping", (req : Request, res : Response) => {
     res.contentType("text/plain");

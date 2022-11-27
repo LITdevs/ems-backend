@@ -11,6 +11,7 @@ import NotFoundReply from "../classes/reply/NotFoundReply";
 import {getEws} from "../index";
 import { Tail } from "tail";
 import axios from "axios";
+import {writeCurrentConfig} from "./nginx";
 
 /**
  * Find and read all app definitions in /litdevs/ems-internal/app-definitions
@@ -176,6 +177,7 @@ router.post("/remove", Auth, async (req: Request, res: Response) => {
                 return res.status(500).json(new ServerErrorReply());
             }
             broadcastDeploy({ name: req.body.appName, message: `Removal complete`, event: "remove_end" })
+            writeCurrentConfig(); // Update nginx
             return res.json(new Reply(200, true, { message: `${req.body.appName} removed.` }));
         })
     })

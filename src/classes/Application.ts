@@ -1,4 +1,3 @@
-import {broadcastDeploy} from "../routes/pm2";
 import fs from "fs";
 
 interface IEnv {
@@ -59,7 +58,7 @@ export class Application implements IApplication {
     }
 
     updateEnv(newEnv) {
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<void>((resolve) => {
             // Create .env file based on the env object of the app definition
             // KEY=VALUE\nKEY2=VALUE2
             this.env = newEnv;
