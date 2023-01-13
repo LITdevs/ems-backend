@@ -121,7 +121,7 @@ export default class Deployment {
 
     pm2() {
         return new Promise<void>((resolve, reject) => {
-            let deploymentCommand = `pm2 start "${this.app.runCommand}" ${this.app.pacman === "pip" ? '--interpreter python3 ' : ""}--name ${this.app.name}`;
+            let deploymentCommand = `pm2 start "${this.app.runCommand}" ${this.app.pacman === "pip" ? '--interpreter python3 ' : ""}--time --name ${this.app.name}`;
             exec(deploymentCommand, { cwd: this.path }, (error, stdout) => {
                 if (error) return reject(error);
                 exec("pm2 save", (error) => {
