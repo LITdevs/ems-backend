@@ -34,6 +34,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json(new Reply(200, true, {message: messages[Math.floor(Math.random() * messages.length)], data: {
         memory: await getMemoryInfo(),
         cpu: await getCpuInfo(),
+        gpu: await getGpuInfo(),
         storage: await getStorageInfo(),
         misc: await getMiscInfo()
     }}));
@@ -55,6 +56,10 @@ router.get("/misc", async (req: Request, res: Response) => {
     res.json(new Reply(200, true, {message: "Behold! Data!", data: await getMiscInfo() }))
 })
 
+router.get("/gpu", async (req: Request, res: Response) => {
+    res.json(new Reply(200, true, {message: "Behold! Data!", data: await getGpuInfo() }))
+})
+
 /**
  * Get the memory info
  */
@@ -66,7 +71,7 @@ async function getMemoryInfo() {
  * Get the CPU info
  */
 async function getCpuInfo() {
-    let cpuInfo = {
+    return {
         usage: await osUtils.cpu.usage(),
         usageUnit: "%",
         load:  {
@@ -76,7 +81,6 @@ async function getCpuInfo() {
         },
         temp: await getCpuTemp()
     }
-    return cpuInfo;
 }
 
 /**
@@ -88,10 +92,10 @@ async function getStorageInfo() {
 
 async function getMiscInfo() {
     return {
-        uptime: await osUtils.os.uptime(),
-        hostname: await osUtils.os.hostname(),
+        uptime: osUtils.os.uptime(),
+        hostname: osUtils.os.hostname(),
         platform: await osUtils.os.platform(),
-        arch: await osUtils.os.arch(),
+        arch: osUtils.os.arch(),
         oos: await osUtils.os.oos(),
         netstat: {
             inout: (await osUtils.netstat.inOut())["total"],
@@ -103,7 +107,7 @@ async function getMiscInfo() {
 
 async function getCpuTemp() {
     return new Promise((resolve) => {
-        exec("sensors -j", (error, stdout, stderr) => {
+        exec("sensors -j", (error, stdout) => {
             if (error) {
                 console.error(error);
                 return resolve(0);
@@ -118,6 +122,55 @@ async function getCpuTemp() {
         })
     })
 
+}
+
+/**
+ * Convert XML to JSON
+ * Thanks https://stackoverflow.com/a/58991998/9342273
+ * @param xml
+ * @returns {any} object
+ */
+const xml2json = xml => {
+    let el = xml.nodeType === 9 ? xml.documentElement : xml
+    let h  = {name: el.nodeName}
+    // @ts-ignore
+    h.content = Array.from(el.childNodes || []).filter(e => e.nodeType === 3).map(e => e.textContent).join('').trim()
+    // @ts-ignore
+    h.attributes = Array.from(el.attributes || []).filter(a => a).reduce((h, a) => { h[a.name] = a.value; return h }, {})
+    // @ts-ignore
+    h.children = Array.from(el.childNodes || []).filter(e => e.nodeType === 1).map(c => h[c.nodeName] = xml2json(c))
+    return h
+}
+
+/**
+ * Get GPU info from nvidia-smi, convert xml to json with xq
+ * @returns {Promise<any>}
+ */
+async function getGpuInfo() {
+    return new Promise((resolve) => {
+        exec("nvidia-smi -x -q | xq .", (error, stdout) => {
+            if (error) {
+                console.error(error);
+                return resolve(0);
+            }
+            try {
+                let gpuJson = JSON.parse(stdout)
+                return resolve({
+                    name: gpuJson["nvidia_smi_log"]["gpu"]["product_name"],
+                    temp: gpuJson["nvidia_smi_log"]["gpu"]["temperature"]["gpu_temp"],
+                    power: gpuJson["nvidia_smi_log"]["gpu"]["power_readings"]["power_draw"],
+                    powerUnit: "W",
+                    memory: gpuJson["nvidia_smi_log"]["gpu"]["fb_memory_usage"],
+                    utilization: gpuJson["nvidia_smi_log"]["gpu"]["utilization"],
+                    coreClock: gpuJson["nvidia_smi_log"]["gpu"]["clocks"]["graphics_clock"],
+                    memoryClock: gpuJson["nvidia_smi_log"]["gpu"]["clocks"]["mem_clock"]
+                })
+            } catch (e) {
+                console.error(e);
+                return resolve(0);
+            }
+        })
+    })
 }
 
 export default router;
