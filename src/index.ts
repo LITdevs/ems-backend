@@ -6,6 +6,7 @@ import db from "./db";
 const app = express();
 const ews = expressWs(app)
 
+app.set('trust proxy', 1)
 app.use(express.json());
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -16,12 +17,14 @@ app.use((req, res, next) => {
 
 import auth from './routes/auth';
 import minecraft from './routes/minecraft';
+import minecraft2 from './routes/minecraft2';
 import pm2 from './routes/pm2';
 import ass from './routes/ass';
 import nginx from './routes/nginx';
 import vitals from './routes/vitals';
 app.use("/v1/auth", auth);
 app.use("/v1/minecraft", minecraft)
+app.use("/v1/minecraft2", minecraft2)
 app.use("/v1/pm2", pm2);
 app.use("/v1/ass", ass);
 app.use("/v1/nginx", nginx);

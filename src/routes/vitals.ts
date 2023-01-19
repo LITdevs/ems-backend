@@ -2,6 +2,7 @@ import express, {Request, Response, Router} from 'express';
 import Reply from "../classes/reply/Reply";
 import osUtils from 'node-os-utils';
 import {exec} from "child_process";
+import rateLimit from 'express-rate-limit'
 
 const router: Router = express.Router();
 
@@ -27,9 +28,18 @@ let messages = [
     "I love vitals. In fact, I have so much of it that I started this API just to tell everyone about it. - Probably not Niko"
 ]
 
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 15 minutes
+    max: 15, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+})
+
+router.use(limiter);
+
 router.get("/fortune", (req: Request, res: Response) => {
     res.send(messages[Math.floor(Math.random() * messages.length)])
 })
+
 router.get("/", async (req: Request, res: Response) => {
     res.json(new Reply(200, true, {message: messages[Math.floor(Math.random() * messages.length)], data: {
         memory: await getMemoryInfo(),
@@ -122,24 +132,6 @@ async function getCpuTemp() {
         })
     })
 
-}
-
-/**
- * Convert XML to JSON
- * Thanks https://stackoverflow.com/a/58991998/9342273
- * @param xml
- * @returns {any} object
- */
-const xml2json = xml => {
-    let el = xml.nodeType === 9 ? xml.documentElement : xml
-    let h  = {name: el.nodeName}
-    // @ts-ignore
-    h.content = Array.from(el.childNodes || []).filter(e => e.nodeType === 3).map(e => e.textContent).join('').trim()
-    // @ts-ignore
-    h.attributes = Array.from(el.attributes || []).filter(a => a).reduce((h, a) => { h[a.name] = a.value; return h }, {})
-    // @ts-ignore
-    h.children = Array.from(el.childNodes || []).filter(e => e.nodeType === 1).map(c => h[c.nodeName] = xml2json(c))
-    return h
 }
 
 /**
