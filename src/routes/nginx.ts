@@ -58,6 +58,15 @@ router.delete("/domain", Auth, (req: Request, res: Response) => {
     res.json(new Reply(200, true, { message: "domain-app link deleted" }))
 })
 
+router.get("/ports", Auth, (req: Request, res: Response) => {
+    let processes = getProcesses();
+    let ports = {}
+    processes.forEach(process => {
+        ports[process.name] = findCurrentPort(process.name, processes) || undefined;
+    })
+    res.json(new Reply(200, true, { message: "Behold! Ports!", data: ports }))
+})
+
 /**
  * Find current port in use by specified application
  * @param appName - Application
@@ -82,14 +91,18 @@ function writeCurrentConfig() {
     processes.forEach(process => {
         if (!domains[process.name]) return;
         conf += `
+upstream ${process.name} {
+    server localhost:${findCurrentPort(process.name, processes)};
+    server localhost:727 backup;
+}
 server {
     listen 80;
     listen [::]:80;
     
     server_name ${domains[process.name]};
-    
     location / {
-      proxy_pass http://localhost:${findCurrentPort(process.name, processes)};
+      fastcgi_param HOST ${domains[process.name]};
+      proxy_pass http://${process.name};
     }
 }`
     })
