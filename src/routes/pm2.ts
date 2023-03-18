@@ -318,7 +318,7 @@ router.get("/icon/:appName", (req: Request, res: Response) => {
     }
 })
 
-router.post("/track/:appName", (req: Request, res: Response) => {
+router.post("/track/:appName", Auth, (req: Request, res: Response) => {
     let appName = req.params.appName;
     if (!processes.some(process => process.name === appName)) return res.status(404).json(new NotFoundReply("No such process"))
     if (!req.body.url || !req.body.host) return res.status(400).json(new InvalidReplyMessage("URL or Host missing"))
@@ -333,6 +333,10 @@ router.post("/track/:appName", (req: Request, res: Response) => {
         console.error(e);
         res.status(500).json(new ServerErrorReply());
     })
+})
+
+router.get("/tracked", (req: Request, res: Response) => {
+
 })
 
 export function broadcastDeploy(message : object) {
