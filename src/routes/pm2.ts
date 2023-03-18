@@ -337,8 +337,12 @@ router.post("/track/:appName", Auth, (req: Request, res: Response) => {
 
 router.get("/tracked", (req: Request, res: Response) => {
     let tracked = processes.filter(process => process.trackingName !== undefined);
-    let trackedNames = tracked.map(process => process.trackingName);
-    res.json(new Reply(200, true, {message: "Here is a list of the trackingNames EMS is aware of", tracked: trackedNames}))
+    let trackedProcesses = tracked.map(process => ({
+        trackingName: process.trackingName,
+        displayName: process.displayName,
+        name: process.name
+    }));
+    res.json(new Reply(200, true, {message: "Here is a list of the tracked processes EMS is aware of", tracked: trackedProcesses}))
 })
 
 export function broadcastDeploy(message : object) {
