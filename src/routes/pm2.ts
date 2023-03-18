@@ -321,8 +321,8 @@ router.get("/icon/:appName", (req: Request, res: Response) => {
 router.post("/track/:appName", (req: Request, res: Response) => {
     let appName = req.params.appName;
     if (!processes.some(process => process.name === appName)) return res.status(404).json(new NotFoundReply("No such process"))
-    if (!req.body.url) return res.status(400).json(new InvalidReplyMessage("URL missing"))
-    axios.post(`https://uptime.litdevs.org/track?key=${process.env.UPTIME_KEY}&name=${appName}&url=${req.body.url}`).then(() => {
+    if (!req.body.url || !req.body.host) return res.status(400).json(new InvalidReplyMessage("URL or Host missing"))
+    axios.post(`https://uptime.litdevs.org/track?key=${process.env.UPTIME_KEY}&name=${appName}&url=${req.body.url}&host=${req.body.host}`).then(() => {
         let process = processes.find(process => process.name === appName);
         if (process) { // Will always be true, just here to make IDE silence :(
             process.trackingName = appName;
