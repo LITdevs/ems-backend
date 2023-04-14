@@ -273,7 +273,7 @@ router.post("/restart", Auth, (req: Request, res: Response) => {
     })
 })
 
-router.post("/pull", Auth, (req: Request, res: Response) => {
+const pull = (req: Request, res: Response) => {
     if (!req.body.appName) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
     if (!processes.some(process => process.name === req.body.appName)) return res.status(404).json(new NotFoundReply("No such process"));
     let command = `git pull`;
@@ -282,8 +282,45 @@ router.post("/pull", Auth, (req: Request, res: Response) => {
             console.error(error);
             return res.status(500).json(new ServerErrorReply());
         }
-        return res.json(new Reply(200, true, { message: "Git pull complete" }));
+        const done = () => {
+            return res.json(new Reply(200, true, { message: "Git pull complete" }));
+        }
+
+        if (req.body?.updateDependencies) {
+            switch (processes.find(process => process.name === req.body.appName)?.pacman) {
+                case "npm":
+                    command = "npm install";
+                    break;
+                case "yarn":
+                    command = "yarn";
+                    break;
+                case "pip":
+                    command = "pip install -r requirements.txt";
+                    break;
+                default:
+                    return res.status(500).json(new ServerErrorReply());
+            }
+            exec(command, { cwd: `/litdevs/projects/${req.body.appName}` }, (error) => {
+                if (error) {
+                    console.error(error);
+                    return res.status(500).json(new ServerErrorReply());
+                }
+                done();
+            })
+        } else {
+            done();
+        }
     })
+}
+
+router.post("/pull", Auth, (req: Request, res: Response) => {
+    pull(req, res);
+})
+
+router.post("/spacespull", (req: Request, res: Response) => {
+    if (!req.body.token) return res.status(400).json(new InvalidReplyMessage("Missing payload"));
+    if (req.body.token !== process.env.SPACES_TOKEN) return res.status(401).json(new InvalidReplyMessage("Invalid token"));
+    pull(req, res);
 })
 
 router.get("/logs/:appName", Auth, (req: Request, res: Response) => {
