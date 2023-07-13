@@ -326,8 +326,8 @@ router.post("/spacespull", (req: Request, res: Response) => {
 router.get("/logs/:appName", Auth, (req: Request, res: Response) => {
     let appName = req.params.appName;
     if (!processes.some(process => process.name === appName)) return res.status(404).json(new NotFoundReply("No such process"))
-    let infoLogs : string | string[] = fs.readFileSync(`/home/skelly/.pm2/logs/${appName}-out.log`).toString();
-    let errorLogs : string | string[] = fs.readFileSync(`/home/skelly/.pm2/logs/${appName}-error.log`).toString();
+    let infoLogs : string | string[] = fs.readFileSync(`/litdevs/.pm2/logs/${appName}-out.log`).toString();
+    let errorLogs : string | string[] = fs.readFileSync(`/litdevs/.pm2/logs/${appName}-error.log`).toString();
     infoLogs = infoLogs.split("\n");
     infoLogs.splice(infoLogs.length - 1, 1); // Remove tailing empty line
     infoLogs.reverse(); // Reverse order, newest first
