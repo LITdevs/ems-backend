@@ -62,8 +62,8 @@ function tailApp(appName : string) {
     console.log(`Tailing ${appName}`)
     try {
         let logFilePaths = {
-            info: `/home/skelly/.pm2/logs/${appName}-out.log`,
-            error: `/home/skelly/.pm2/logs/${appName}-error.log`
+            info: `/litdevs/.pm2/logs/${appName}-out.log`,
+            error: `/litdevs/.pm2/logs/${appName}-error.log`
         }
         const infoLog = (data) => {
             data = dataCleaner(data)
